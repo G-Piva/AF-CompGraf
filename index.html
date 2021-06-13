@@ -1,1 +1,226 @@
-ojsoj
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/ammo.js"></script>
+        <script src="https://preview.babylonjs.com/cannon.js"></script>
+        <script src="https://preview.babylonjs.com/Oimo.js"></script>
+        <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+        <script src="Ball.js"></script>
+        <script src="rockPlataform.js"></script>
+        <script src="magmaPlataform.js"></script>
+             
+
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+        var ballCount = 0;
+        var ball = null;
+        var killBox = null;
+
+        var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false});};
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+            
+            createLightAndCamera(scene);
+        
+        	scene.enablePhysics(new BABYLON.Vector3(0, -9.8, 0), new BABYLON.CannonJSPlugin(false));
+
+            const physEngine = scene.getPhysicsEngine();
+            
+            killBox = createKillBox(scene);
+            createProtections(scene);
+
+            
+            
+            
+            //intial
+            var rockPlatRot = new BABYLON.Vector3(5,Math.PI/2,0);
+            var rockPlatPos = new BABYLON.Vector3(-1.4,0,0);
+            var rockPlat = new rockPlataform(scene, rockPlatPos, rockPlatRot, 5.5, 3.5, 0.25);
+            
+            //quarto
+            var rockPlatRot4 = new BABYLON.Vector3(80.05,Math.PI/2,0); //inclinação
+            var rockPlatPos4 = new BABYLON.Vector3(4.5,-7.2,0); //posição
+            var rockPlat4 = new rockPlataform(scene, rockPlatPos4, rockPlatRot4, 9.5, 3.5, 0.25,)//tamanho
+            
+            //second inclined
+            var rockPlatRot5 = new BABYLON.Vector3(4.9,Math.PI/2,0); //inclinação
+            var rockPlatPos5 = new BABYLON.Vector3(12.5,-1.7,0); //posição
+            var rockPlat5 = new rockPlataform(scene, rockPlatPos5, rockPlatRot5, 9.5, 3.5, 0.25,) //tamanho 
+            
+            //terceiro
+            var rockPlatRot6 = new BABYLON.Vector3(-80,Math.PI/2,0);
+            var rockPlatPos6 = new BABYLON.Vector3(4,-11,0);
+            var rockPlat6 = new rockPlataform(scene, rockPlatPos6, rockPlatRot6, 16, 2.5, 0.25,);
+            
+            //under
+            var rockPlatRot7 = new BABYLON.Vector3(80.08,Math.PI/2,0);
+            var rockPlatPos7 = new BABYLON.Vector3(22,-6.5,0);
+            var rockPlat7 = new rockPlataform(scene, rockPlatPos7, rockPlatRot7, 12, 3.5, 0.25);
+            
+            
+            //first rotation
+            var magmaPlatRot1 = new BABYLON.Vector3(Math.PI/2,0,0);
+            var magmaPlatPos1 = new BABYLON.Vector3(1,-0.5,0);
+            var magmaPlat1 = new magmaPlataform(scene, magmaPlatPos1, magmaPlatRot1, 5.5, 3.5, 0.25);
+            magmaPlat1.animatePlat(magmaPlatPos1,new BABYLON.Vector3(4.5,-0.75,0 ),"rotation.y",BABYLON.Tools.ToRadians(0),BABYLON.Tools.ToRadians(-360))
+            
+            //door up
+            var magmaPlatRot10 = new BABYLON.Vector3(0,Math.PI/2,0); //inclinação
+            var magmaPlatPos10 = new BABYLON.Vector3(10,3,0);//não importa
+            var magmaPlat10 = new magmaPlataform(scene, magmaPlatPos10, magmaPlatRot10, 6, 3.5, 0.25); //tamanho
+            magmaPlat10.animateSlideU(new BABYLON.Vector3(0,1,0), new BABYLON.Vector3(0,0,0),"y"); //eixo de movimento
+
+            var magmaPlatRot11 = new BABYLON.Vector3(Math.PI/2,4.7,0);
+            var magmaPlatPos11 = new BABYLON.Vector3(12.5,-7,0);
+            var magmaPlat11 = new magmaPlataform(scene, magmaPlatPos11, magmaPlatRot11, 7, 3.5, 0.25);
+            magmaPlat11.animateSlideU2(new BABYLON.Vector3(15,0,0), new BABYLON.Vector3(15,0,0),"y");
+            
+            
+            BABYLON.SceneLoader.ImportMeshAsync("", '/assets/', 'uploads_files_1825137_FUNNEL_OBJ.obj').then((result) => {
+                this.fakeground = result.meshes[0];
+                this.fakeground.visibility = 0;
+                this.meshes = result.meshes[1];       
+                this.meshes.position = new BABYLON.Vector3(22,-24,0);//poisição
+               /* this.meshes.rotation = rot;*/ //inclinação
+                this.meshes.scaling = new BABYLON.Vector3(1.7,0.5,1.7);//tamnho
+
+                this.meshes.physicsImpostor = new BABYLON.PhysicsImpostor(this.meshes, BABYLON.PhysicsImpostor.MeshImpostor, {mass: 0, restitution:1}, scene);
+            });
+
+
+
+            var h = 3;
+            do {
+                ball = new Ball(scene,h);
+                b = ball.getBall();
+                b.actionManager = new BABYLON.ActionManager(scene);
+                ballCount += 1;
+                h = h+4;
+            }while (ballCount <= 0); 
+
+            /*--utilizado para debugar, comente para rodar "normal"--*/
+            //scene.debugLayer.show();
+            
+            return scene;
+        
+        };
+        
+        window.initFunction = async function() {               
+            var asyncEngineCreation = async function() {
+                try {
+                    return createDefaultEngine();
+                } catch(e) {
+                    console.log("the available createEngine function failed. Creating the default engine instead");
+                    return createDefaultEngine();
+                }
+            }
+
+            window.engine = await asyncEngineCreation();
+            if (!engine) throw 'engine should not be null.';
+            window.scene = createScene();
+        };
+        
+        initFunction().then(() => {sceneToRender = scene        
+            engine.runRenderLoop(function (ball) {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        });
+
+        function createLightAndCamera(scene) {
+            const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 30, new BABYLON.Vector3(0, -0.5, 0));
+            camera.attachControl(canvas, true);
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0));
+            return camera;
+        }
+
+        function createKillBox (scene) {
+            var killBox = BABYLON.MeshBuilder.CreateBox("killBox", {width:100, depth:100, height:0.5}, scene);
+            killBox.position = new BABYLON.Vector3(0,-40,0);
+            killBox.visibility = 0;
+            return killBox;   
+        }
+
+        function createProtections(scene) {
+
+            //Proteção de trás
+            var BProtecPos = new BABYLON.Vector3(12.5,-3,2);
+            var BProtecRot = new BABYLON.Vector3(0,0,0);
+            var BProtec = new rockPlataform(scene, BProtecPos, BProtecRot, 22, 33, 0.25);
+            BP = BProtec.getPlataform();
+            BP.visibility = 0;
+
+            //proteção frontal
+            var FProtecPos = new BABYLON.Vector3(12.5,-3,-2);
+            var FProtecRot = new BABYLON.Vector3(0,0,0);
+            var FProtec = new rockPlataform(scene, FProtecPos, FProtecRot, 22, 33, 0.25);
+            FP = FProtec.getPlataform(); 
+            FP.visibility = 0;
+
+            //side right
+            var rockPlatRot3 = new BABYLON.Vector3(0,Math.PI/2,0);
+            var rockPlatPos3 = new BABYLON.Vector3(28,-6, 0);
+            var rockPlat3 = new rockPlataform(scene, rockPlatPos3, rockPlatRot3, 20, 4, 0.25,);
+
+            //side left
+            var rockPlatRot4 = new BABYLON.Vector3(0,Math.PI/2,0);
+            var rockPlatPos4 = new BABYLON.Vector3(-4,-6, 0);
+            var rockPlat4 = new rockPlataform(scene, rockPlatPos4, rockPlatRot4, 20, 4, 0.25,);
+        }
+
+        function onClick(scene, b) {
+            scene.onPointerDown = function (evt, pickResults){
+                if(ballCount<1){
+                    ball = new Ball(scene, 20);
+                    var b = ball.getBall();
+                    ballCount+=1;
+                }
+
+                return b;
+            }
+        }
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
